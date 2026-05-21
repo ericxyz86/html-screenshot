@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>html-screenshots</title>
+<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<main>
+  <header>
+    <h1>html-screenshots</h1>
+    <p class="lede">Capture every section of a website as PNGs. Pick full-section crops or 16:9 presentation slides.</p>
+  </header>
+
+  <form id="capture-form">
+    <label class="field">
+      <span class="label">URL</span>
+      <input type="url" name="url" id="url" placeholder="https://example.com" required />
+    </label>
+
+    <fieldset class="modes">
+      <legend>Output mode</legend>
+      <label class="mode">
+        <input type="radio" name="mode" value="full" checked />
+        <div>
+          <strong>Full sections</strong>
+          <span>One PNG per section at native height. Aspect ratios vary.</span>
+        </div>
+      </label>
+      <label class="mode">
+        <input type="radio" name="mode" value="slides" />
+        <div>
+          <strong>16:9 slides</strong>
+          <span>1920&times;1080 canvases. Tall sections shrink to fit if scale stays &ge;70%, otherwise split across slides.</span>
+        </div>
+      </label>
+    </fieldset>
+
+    <button type="submit" id="go">Generate</button>
+  </form>
+
+  <section id="status" hidden>
+    <h2>Progress</h2>
+    <ol id="log"></ol>
+  </section>
+
+  <section id="results" hidden>
+    <header class="results-header">
+      <h2>Results <span id="count"></span></h2>
+      <a id="zip-link" class="btn" download>Download ZIP</a>
+    </header>
+    <div id="gallery"></div>
+  </section>
+</main>
+<script src="/app.js"></script>
+</body>
+</html>
