@@ -50,6 +50,9 @@ app.use(
   }),
 );
 
+// Mounted before auth and rate-limiting so container healthchecks (which can't send creds) pass.
+app.get('/healthz', (_req, res) => res.json({ ok: true }));
+
 // Optional HTTP Basic Auth — gates every route if env vars are set.
 if (AUTH_USER && AUTH_PASS) {
   app.use(
@@ -245,8 +248,6 @@ app.delete('/api/jobs/:jobId', checkOrigin, async (req, res) => {
     res.status(500).json({ error: 'Failed to delete' });
   }
 });
-
-app.get('/healthz', (_req, res) => res.json({ ok: true }));
 
 // Helpers --------------------------------------------------------------------
 
