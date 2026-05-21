@@ -1,6 +1,6 @@
 # Security
 
-This app accepts an arbitrary URL from any client and renders it in headless Chromium. The threat model is **unauthenticated internet** — when deployed publicly, every defense has to assume the input is hostile.
+This app accepts an arbitrary URL from a Cloudflare Access-authenticated user and renders it in headless Chromium. The threat model is still hostile input — every URL and rendered page has to be treated as untrusted.
 
 ## Threats and mitigations
 
@@ -67,7 +67,6 @@ This app accepts an arbitrary URL from any client and renders it in headless Chr
 
 | Env var | Default | Why |
 |---|---|---|
-| `BASIC_AUTH_USER` / `BASIC_AUTH_PASSWORD` | unset | Gate every route with HTTP Basic Auth. Required for any internet-exposed deploy. |
 | `ALLOWED_ORIGINS` | empty | Comma-separated origins permitted to call `POST /api/capture` (host itself is always allowed). |
 | `TRUST_PROXY` | `0` | Set to `1` when behind a single reverse proxy (Coolify). Without this, `express-rate-limit` rate-limits the proxy, not the real client. |
 | `MAX_CONCURRENT` | `1` | Parallel Chromium launches. Bump only if you've sized the host for it. |

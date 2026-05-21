@@ -20,8 +20,6 @@ Open <http://127.0.0.1:5174>.
 ```bash
 docker build -t html-screenshots .
 docker run --rm -p 5174:5174 \
-  -e BASIC_AUTH_USER=admin \
-  -e BASIC_AUTH_PASSWORD='change-me' \
   -e ALLOWED_ORIGINS='https://html-screenshot.aiailabs.net' \
   html-screenshots
 ```
@@ -33,8 +31,6 @@ docker run --rm -p 5174:5174 \
 3. **Domain**: `https://html-screenshot.aiailabs.net` (Coolify provisions the cert).
 4. **Port**: `5174`.
 5. **Environment variables**:
-   - `BASIC_AUTH_USER` — pick a username
-   - `BASIC_AUTH_PASSWORD` — long random string
    - `ALLOWED_ORIGINS` — `https://html-screenshot.aiailabs.net`
    - `TRUST_PROXY=1` (already set in the Dockerfile)
    - `BIND_ADDRESS=0.0.0.0` (already set)
@@ -51,7 +47,7 @@ This server accepts an arbitrary URL from a user and renders it in headless Chro
 - **Chromium host-resolver-rules**: Chromium is started with `--host-resolver-rules` mapping the requested hostname to the pre-validated IPs. Any DNS lookup for a host outside that pin gets `NOTFOUND` from the network stack. This blocks DNS rebinding because Chromium never re-resolves.
 - **Route interception**: every request the browser makes (navigations + subresources) passes through `page.route()`. Anything that's not `http(s)`, or that points to `localhost` / `0.0.0.0` / a private IP literal, is aborted. Defense-in-depth against redirects to `chrome://`, `file://`, or attacker-controlled CNAME chains.
 - **Chromium sandbox** stays on (`chromiumSandbox: true`) and the container runs as the non-root `pwuser`. The Playwright base image ships with the kernel-userns setup the sandbox needs.
-- **HTTP Basic Auth** at the edge if `BASIC_AUTH_USER` / `BASIC_AUTH_PASSWORD` are set (recommended for public deploys).
+- **Cloudflare Access** gates the production hostname; the app itself does not prompt for a second Basic Auth login.
 - **Origin/Referer check** on POST `/api/capture` and DELETE `/api/jobs/:id` rejects cross-site form submissions.
 - **Per-IP rate limit** — 20 capture jobs per 10 minutes, 120 general requests per minute. Configure `TRUST_PROXY` correctly so this rate-limits clients not your reverse proxy.
 - **In-process concurrency cap** (`MAX_CONCURRENT`, default 1) keeps multiple Chromium launches from OOMing the box.
@@ -89,7 +85,7 @@ The UI exposes individual files and a single ZIP per job.
 
 ## Stack
 
-- Express + Helmet + express-rate-limit + express-basic-auth
+- Express + Helmet + express-rate-limit
 - Playwright (Chromium with sandbox)
 - sharp (libvips) for resize + composite
 - archiver for ZIPs

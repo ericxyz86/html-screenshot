@@ -1,7 +1,7 @@
 # NOX.md — handoff from Claude Code (MacBook Pro)
 
 This file is read by Nox on Mac Studio after `git pull`. It exists because we
-can't message each other directly. Last updated **2026-05-21 by Claude Code**.
+can't message each other directly. Last updated **2026-05-21 by Nox**.
 
 If you (Nox) make changes that update this state, **edit this file in the same
 commit** so the next agent inherits accurate context.
@@ -23,7 +23,7 @@ headless Chromium, returns per-section PNGs. Deployed to Hetzner via Coolify.
 | Dashboard | https://coolify.aiailabs.net/project/ckckg4088ko0w48k8gk8kckw/environment/acos4ss88s00wsk04kc84sss/application/zk0w40s0gcwws88cskc48cs0 |
 | Image | Dockerfile build pack, base `mcr.microsoft.com/playwright:v1.60.0-noble` |
 | Port | 5174 (set by Dockerfile, exposed via Coolify) |
-| Healthcheck | `GET /healthz` — **must remain unauthenticated** (see Gotchas) |
+| Healthcheck | `GET /healthz` — **must stay before rate limits** (see Gotchas) |
 
 Auth layers, outside → in:
 
@@ -31,8 +31,8 @@ Auth layers, outside → in:
    302-redirected to `agileintelligence.cloudflareaccess.com/cdn-cgi/access/login`.
    curl/CI cannot reach the origin without a CF Access service token. Browser
    login via the team's IdP is the normal path.
-2. **HTTP Basic Auth** at the origin — user `admin`, password generated and
-   stored in Coolify env vars. Applies to every route except `/healthz`.
+2. **No app-level Basic Auth** — Cloudflare Access is the only login prompt,
+   matching the other `aiailabs.net` apps.
 3. **SSRF defenses** inside the app (DNS pinning + Chromium host-resolver-rules
    + route interception). See `SECURITY.md`.
 
@@ -45,13 +45,8 @@ deploy from Mac Studio, retrieve from Eric's `~/secrets/` or 1Password:
   ops. Token created at `<COOLIFY_URL>/security/api-tokens`. Sanctum format
   (`<id>|<random>`) — **must be quoted** in shell or read with `awk` to avoid
   the `|` being interpreted as a pipe.
-- `.env.deploy.local` — the live `BASIC_AUTH_USER` and `BASIC_AUTH_PASSWORD`
-  that the deployed instance is using. Needed if you want to test the live URL
-  past the Cloudflare Access prompt.
-
 If neither file is in `~/secrets/`, ask Eric on Telegram. Don't regenerate the
-Basic Auth password without coordinating — the live Coolify env vars hold
-the canonical value.
+Coolify API token without coordinating.
 
 ## Coolify source — pending switch
 
@@ -114,10 +109,10 @@ intentional, leave it alone.
 
 ## Gotchas — read before changing code
 
-1. **`/healthz` must stay above auth.** It's mounted at line ~53 of
-   `server.mjs`, *before* both `basicAuth` and the rate limiter. The Dockerfile
+1. **`/healthz` must stay above rate limits.** It's mounted near the top of
+   `server.mjs`, before the rate limiter. The Dockerfile
    HEALTHCHECK fetches `http://127.0.0.1:5174/healthz` without creds — if you
-   move `/healthz` below auth, every deploy will fail with `exited:unhealthy`
+   move `/healthz` below rate limits, deploy health can fail with `exited:unhealthy`
    after ~3 minutes of build time. This was the cause of the first failed
    deploy (commit `b41c6c6`); fix is commit `adddc36`.
 

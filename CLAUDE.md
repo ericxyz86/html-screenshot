@@ -31,17 +31,16 @@ This server takes an arbitrary URL from a user and renders it in headless Chromi
 
 When touching any of these, read `SECURITY.md` for the rationale and **keep all three**. Anything weaker has been considered and rejected.
 
-### `/healthz` must be mounted before auth and rate-limit middleware
+### `/healthz` must be mounted before rate-limit middleware
 
-The Dockerfile `HEALTHCHECK` runs `node -e "fetch('http://127.0.0.1:5174/healthz')..."` from inside the container with no credentials. If `/healthz` moves below `app.use(basicAuth(...))` in `server.mjs`, every Coolify deploy fails as `exited:unhealthy` after ~3 minutes of build time — this exact bug already cost one deploy cycle (fix: commit `adddc36`). The route is intentionally `app.get('/healthz', ...)` registered immediately after `helmet`.
+The Dockerfile `HEALTHCHECK` runs `node -e "fetch('http://127.0.0.1:5174/healthz')..."` from inside the container with no credentials. Keep `/healthz` near the top of `server.mjs`, before request middleware that can throttle or reject it. The route is intentionally `app.get('/healthz', ...)` registered immediately after `helmet`.
 
-`/healthz` is the only route that should ever be exempt from `basicAuth` and `generalLimiter`. Everything else — including the static frontend at `public/` — sits behind both.
+`/healthz` is mounted before `generalLimiter`. Everything else — including the static frontend at `public/` — sits behind the rate limiter.
 
 ## Runtime configuration
 
 Env vars are consumed at the top of `server.mjs`. The ones with non-obvious behavior:
 
-- `BASIC_AUTH_USER` + `BASIC_AUTH_PASSWORD` — if both unset, the server logs `WARNING: Basic Auth disabled` and runs open. Don't ship without these in any reachable environment.
 - `ALLOWED_ORIGINS` (comma-separated) — checked against `Origin`/`Referer` on `POST /api/capture` and `DELETE /api/jobs/:id` to reject cross-site form submissions. Not a CORS header — purely defensive.
 - `TRUST_PROXY` (integer count of trusted hops) — must match your real proxy chain or `express-rate-limit` will rate-limit the proxy IP instead of the client. Set to `1` in the Dockerfile; bump if running behind multiple proxies.
 - `MAX_CONCURRENT` (default 1) — caps simultaneous Chromium launches. Each Playwright instance can use ~500MB+; raising this on a small VM will OOM.
@@ -50,8 +49,8 @@ The Dockerfile bakes `BIND_ADDRESS=0.0.0.0`, `PORT=5174`, `TRUST_PROXY=1`, `NODE
 
 ## Deployment
 
-Production is on Coolify at `https://html-screenshot.aiailabs.net`, behind Cloudflare Access (Zero Trust). External curl probes get a 302 redirect to the Access login; trust the Coolify dashboard's `running:healthy` status as the source of truth, not external HTTP probes. See **`NOX.md`** for the full deploy-state handoff — app UUIDs, manual deploy recipes, and the pending GitHub-App source switch.
+Production is on Coolify at `https://html-screenshot.aiailabs.net`, behind Cloudflare Access (Zero Trust). External curl probes get a 302 redirect to the Access login; after browser IdP login, the app opens directly with no second Basic Auth prompt. Trust the Coolify dashboard's `running:healthy` status as the source of truth, not external HTTP probes. See **`NOX.md`** for the full deploy-state handoff — app UUIDs, manual deploy recipes, and the pending GitHub-App source switch.
 
 ## Multi-agent coordination
 
-This repo is worked on by both Claude Code (MacBook Pro) and Nox (Mac Studio). The two agents can't message each other directly — `git pull` / `git push` and `NOX.md` are the coordination channels. When making deploy-state-relevant changes (env vars, Dockerfile, server.mjs port binding, the auth/route ordering rule above), **update `NOX.md` in the same commit** so the other agent inherits accurate context on its next pull.
+This repo is worked on by both Claude Code (MacBook Pro) and Nox (Mac Studio). The two agents can't message each other directly — `git pull` / `git push` and `NOX.md` are the coordination channels. When making deploy-state-relevant changes (env vars, Dockerfile, server.mjs port binding, middleware ordering), **update `NOX.md` in the same commit** so the other agent inherits accurate context on its next pull.

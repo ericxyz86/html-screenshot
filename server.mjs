@@ -2,7 +2,6 @@ import express from 'express';
 import archiver from 'archiver';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import basicAuth from 'express-basic-auth';
 import { mkdir, rm, stat, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -19,8 +18,6 @@ const JOB_TTL_MS = Number(process.env.JOB_TTL_MS || 60 * 60 * 1000); // 1h
 const CLEANUP_INTERVAL_MS = 15 * 60 * 1000; // 15m
 const MAX_CONCURRENT = Number(process.env.MAX_CONCURRENT || 1);
 
-const AUTH_USER = process.env.BASIC_AUTH_USER || '';
-const AUTH_PASS = process.env.BASIC_AUTH_PASSWORD || '';
 const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || '').split(',').map((s) => s.trim()).filter(Boolean);
 
 await mkdir(OUTPUT_ROOT, { recursive: true });
@@ -50,22 +47,8 @@ app.use(
   }),
 );
 
-// Mounted before auth and rate-limiting so container healthchecks (which can't send creds) pass.
+// Mounted before rate-limiting so container healthchecks stay reliable.
 app.get('/healthz', (_req, res) => res.json({ ok: true }));
-
-// Optional HTTP Basic Auth — gates every route if env vars are set.
-if (AUTH_USER && AUTH_PASS) {
-  app.use(
-    basicAuth({
-      users: { [AUTH_USER]: AUTH_PASS },
-      challenge: true,
-      realm: 'html-screenshots',
-    }),
-  );
-  console.log('Basic Auth enabled');
-} else {
-  console.log('WARNING: Basic Auth disabled — set BASIC_AUTH_USER + BASIC_AUTH_PASSWORD');
-}
 
 // Per-IP rate limit. Capture is expensive — be stingy.
 const captureLimiter = rateLimit({
