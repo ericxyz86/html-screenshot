@@ -86,35 +86,57 @@ function handleEvent(evt) {
 
 function showResults(evt) {
   resultsEl.hidden = false;
-  countEl.textContent = `(${evt.count} files, ${evt.mode} mode)`;
+  countEl.textContent = `${evt.count} files · ${evt.mode}`;
   zipLink.href = evt.zipUrl;
   clearChildren(galleryEl);
 
-  for (const f of evt.files) {
-    const tile = document.createElement('div');
-    tile.className = 'tile';
+  evt.files.forEach((f, i) => {
+    const tile = document.createElement('article');
+    tile.className = 'visual__tile';
+
+    const art = document.createElement('div');
+    art.className = 'visual__art';
+
+    const badge = document.createElement('span');
+    badge.className = 'visual__badge';
+    badge.textContent = String(i + 1).padStart(2, '0');
+    art.appendChild(badge);
+
     const img = document.createElement('img');
     img.loading = 'lazy';
     img.src = `/output/${f.file}`;
     img.alt = f.id;
-    tile.appendChild(img);
+    art.appendChild(img);
+    tile.appendChild(art);
+
+    const caption = document.createElement('div');
+    caption.className = 'visual__caption';
+
+    const title = document.createElement('div');
+    title.className = 'visual__title';
+    title.textContent = f.id;
+    caption.appendChild(title);
 
     const meta = document.createElement('div');
-    meta.className = 'tile-meta';
-    const left = document.createElement('span');
-    let label = f.id;
-    if (f.strategy === 'split') label += ` (${f.slide}/${f.of})`;
-    else if (f.strategy === 'shrunk') label += ` · shrunk ${Math.round((f.scale || 0) * 100)}%`;
-    else if (f.strategy === 'fits') label += ` · fits`;
-    left.textContent = label;
-    const right = document.createElement('a');
-    right.href = `/output/${f.file}`;
-    right.download = '';
-    right.textContent = 'open';
-    meta.appendChild(left);
-    meta.appendChild(right);
-    tile.appendChild(meta);
+    meta.className = 'visual__meta';
+    const cat = document.createElement('span');
+    cat.className = 'visual__cat';
+    if (f.strategy === 'split') cat.textContent = `Split · ${f.slide}/${f.of}`;
+    else if (f.strategy === 'shrunk') cat.textContent = `Shrunk · ${Math.round((f.scale || 0) * 100)}%`;
+    else if (f.strategy === 'fits') cat.textContent = 'Fits';
+    else cat.textContent = 'Section';
+    meta.appendChild(cat);
+
+    const link = document.createElement('a');
+    link.className = 'visual__link';
+    link.href = `/output/${f.file}`;
+    link.download = '';
+    link.textContent = 'Open';
+    meta.appendChild(link);
+
+    caption.appendChild(meta);
+    tile.appendChild(caption);
 
     galleryEl.appendChild(tile);
-  }
+  });
 }

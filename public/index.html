@@ -3,53 +3,77 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>html-screenshots</title>
+<title>html-screenshots — section capture</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap">
 <link rel="stylesheet" href="/style.css" />
 </head>
 <body>
 <main>
-  <header>
-    <h1>html-screenshots</h1>
-    <p class="lede">Capture every section of a website as PNGs. Pick full-section crops or 16:9 presentation slides.</p>
+  <header class="page-header">
+    <div class="brand-meta">
+      <span class="rule" aria-hidden="true"></span>
+      <span>Agile Intelligence · Capture Suite</span>
+    </div>
+    <h1>Capture every section as <em>presentation-ready</em> PNGs.</h1>
+    <p class="lede">Render any URL, slice it by semantic section, and export native crops or 1920×1080 slides — ready for decks, audits, and case studies.</p>
   </header>
 
-  <form id="capture-form">
-    <label class="field">
-      <span class="label">URL</span>
-      <input type="url" name="url" id="url" placeholder="https://example.com" required />
-    </label>
+  <section class="section" aria-labelledby="cap-title">
+    <div class="section__chrome">
+      <span class="section__num">01</span>
+      <span class="section__rule" aria-hidden="true"></span>
+      <h2 class="section__title" id="cap-title">Capture</h2>
+    </div>
 
-    <fieldset class="modes">
-      <legend>Output mode</legend>
-      <label class="mode">
-        <input type="radio" name="mode" value="full" checked />
-        <div>
-          <strong>Full sections</strong>
-          <span>One PNG per section at native height. Aspect ratios vary.</span>
-        </div>
+    <form id="capture-form">
+      <label class="field">
+        <span class="label">Target URL</span>
+        <input type="url" name="url" id="url" placeholder="https://example.com" required />
       </label>
-      <label class="mode">
-        <input type="radio" name="mode" value="slides" />
-        <div>
-          <strong>16:9 slides</strong>
-          <span>1920&times;1080 canvases. Tall sections shrink to fit if scale stays &ge;70%, otherwise split across slides.</span>
-        </div>
-      </label>
-    </fieldset>
 
-    <button type="submit" id="go">Generate</button>
-  </form>
+      <fieldset class="modes">
+        <legend>Output mode</legend>
+        <label class="mode">
+          <input type="radio" name="mode" value="full" checked />
+          <div>
+            <strong>Full sections</strong>
+            <span>One PNG per section at native height. Aspect ratios vary.</span>
+          </div>
+        </label>
+        <label class="mode">
+          <input type="radio" name="mode" value="slides" />
+          <div>
+            <strong>16:9 slides</strong>
+            <span>1920×1080 canvases. Tall sections shrink to fit if scale stays ≥70%, otherwise split across slides.</span>
+          </div>
+        </label>
+      </fieldset>
 
-  <section id="status" hidden>
-    <h2>Progress</h2>
+      <button type="submit" id="go">Generate</button>
+    </form>
+  </section>
+
+  <section id="status" class="section" hidden aria-labelledby="prog-title">
+    <div class="section__chrome">
+      <span class="section__num">02</span>
+      <span class="section__rule" aria-hidden="true"></span>
+      <h2 class="section__title" id="prog-title">Progress</h2>
+    </div>
     <ol id="log"></ol>
   </section>
 
-  <section id="results" hidden>
-    <header class="results-header">
-      <h2>Results <span id="count"></span></h2>
+  <section id="results" class="section" hidden aria-labelledby="res-title">
+    <div class="section__chrome">
+      <span class="section__num">03</span>
+      <span class="section__rule" aria-hidden="true"></span>
+      <h2 class="section__title" id="res-title">Results</h2>
+    </div>
+    <div class="results-header">
+      <h3>Captured frames<span id="count"></span></h3>
       <a id="zip-link" class="btn" download>Download ZIP</a>
-    </header>
+    </div>
     <div id="gallery"></div>
   </section>
 </main>
