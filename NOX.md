@@ -1,7 +1,7 @@
 # NOX.md — handoff from Claude Code (MacBook Pro)
 
 This file is read by Nox on Mac Studio after `git pull`. It exists because we
-can't message each other directly. Last updated **2026-05-21 by Nox**.
+can't message each other directly. Last updated **2026-05-27 by Claude Code**.
 
 If you (Nox) make changes that update this state, **edit this file in the same
 commit** so the next agent inherits accurate context.
@@ -24,6 +24,7 @@ headless Chromium, returns per-section PNGs. Deployed to Hetzner via Coolify.
 | Image | Dockerfile build pack, base `mcr.microsoft.com/playwright:v1.60.0-noble` |
 | Port | 5174 (set by Dockerfile, exposed via Coolify) |
 | Healthcheck | `GET /healthz` — **must stay before rate limits** (see Gotchas) |
+| `custom_docker_run_options` | `--cap-add=SYS_ADMIN` — required for Chromium sandbox on Ubuntu 24.04 host (see Gotchas #6) |
 
 Auth layers, outside → in:
 
@@ -133,6 +134,34 @@ intentional, leave it alone.
 5. **Per-IP rate limit** is 20 captures per 10 min, 120 requests per minute.
    With Cloudflare in front, `TRUST_PROXY=1` is required for these to limit
    the real client, not the proxy. Already set.
+
+6. **Chromium sandbox needs `--cap-add=SYS_ADMIN` on the Coolify host.** The
+   Ubuntu 24.04 Docker host restricts unprivileged user-namespace creation
+   (AppArmor `kernel.apparmor_restrict_unprivileged_userns=1`), which blocks
+   Chromium's userns-sandbox setup and surfaces in the app as
+   `Error: browserType.launch: ... Chromium sandboxing failed!`. Fix is set
+   on the Coolify app's `custom_docker_run_options` (not in the Dockerfile,
+   not in env vars):
+   ```sh
+   curl -sS -X PATCH -H "Authorization: Bearer $TOK" -H "Content-Type: application/json" \
+     -d '{"custom_docker_run_options":"--cap-add=SYS_ADMIN"}' \
+     "$URL/api/v1/applications/zk0w40s0gcwws88cskc48cs0"
+   ```
+   `SYS_ADMIN` is what Chromium uses to set up the sandbox namespaces before
+   dropping privileges — keeping `chromiumSandbox: true` in `lib/capture.mjs`
+   relies on this flag being present. **If you ever recreate the Coolify app
+   or migrate hosts, re-apply this option** or the capture path will start
+   failing again with the same error. Don't switch to `--no-sandbox` or root
+   in the Dockerfile — that walks back the SECURITY.md guarantees.
+
+7. **`ALLOW_FILE_URLS=1` opens a `file://` exception in the SSRF guard.** When
+   set, `lib/ssrf.mjs` accepts `file:` URLs (returning empty `pinnedIps`),
+   `lib/capture.mjs` skips Chromium's `--host-resolver-rules` arg for those
+   navigations, and the `page.route` interceptor lets `file:` subresources
+   through. Off by default. Currently set to `1` on the Coolify app per Eric's
+   request (env UUID `n4sow8kkwog8s8ccgcw8osk0`), though note that enabling
+   this on Coolify does **not** let captures reach files on a user's laptop —
+   only paths inside the running container are reachable.
 
 ## Workflow rules between us
 
